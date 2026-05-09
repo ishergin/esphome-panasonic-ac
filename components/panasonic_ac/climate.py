@@ -12,6 +12,9 @@ from esphome.components import uart, climate, sensor, select, switch
 AUTO_LOAD = ["switch", "sensor", "select"]
 DEPENDENCIES = ["uart"]
 
+# Optional dependency for Modbus support
+OPTIONAL_DEPS = ["panasonic_ac_modbus"]
+
 panasonic_ac_ns = cg.esphome_ns.namespace("panasonic_ac")
 PanasonicAC = panasonic_ac_ns.class_(
     "PanasonicAC", cg.Component, uart.UARTDevice, climate.Climate
@@ -40,6 +43,7 @@ CONF_ECO_SWITCH = "eco_switch"
 CONF_ECONAVI_SWITCH = "econavi_switch"
 CONF_MILD_DRY_SWITCH = "mild_dry_switch"
 CONF_CURRENT_POWER_CONSUMPTION = "current_power_consumption"
+CONF_MODBUS = "modbus"
 CONF_WLAN = "wlan"
 CONF_CNT = "cnt"
 
@@ -78,10 +82,14 @@ PANASONIC_CNT_SCHEMA = {
     ),
 }
 
+PANASONIC_MODBUS_SCHEMA = {
+    cv.Optional(CONF_MODBUS): cv.use_id(cg.Component),
+}
+
 CONFIG_SCHEMA = cv.typed_schema(
     {
-        CONF_WLAN: climate.climate_schema(PanasonicACWLAN).extend(PANASONIC_COMMON_SCHEMA).extend(uart.UART_DEVICE_SCHEMA),
-        CONF_CNT: climate.climate_schema(PanasonicACCNT).extend(PANASONIC_COMMON_SCHEMA).extend(PANASONIC_CNT_SCHEMA).extend(uart.UART_DEVICE_SCHEMA),
+        CONF_WLAN: climate.climate_schema(PanasonicACWLAN).extend(PANASONIC_COMMON_SCHEMA).extend(PANASONIC_MODBUS_SCHEMA).extend(uart.UART_DEVICE_SCHEMA),
+        CONF_CNT: climate.climate_schema(PanasonicACCNT).extend(PANASONIC_COMMON_SCHEMA).extend(PANASONIC_CNT_SCHEMA).extend(PANASONIC_MODBUS_SCHEMA).extend(uart.UART_DEVICE_SCHEMA),
     }
 )
 
@@ -127,3 +135,8 @@ async def to_code(config):
     if CONF_CURRENT_POWER_CONSUMPTION in config:
         sens = await sensor.new_sensor(config[CONF_CURRENT_POWER_CONSUMPTION])
         cg.add(var.set_current_power_consumption_sensor(sens))
+
+    if CONF_MODBUS in config:
+        cg.add_define("USE_PANASONIC_AC_MODBUS")
+        modbus_var = await cg.get_variable(config[CONF_MODBUS])
+        cg.add(var.set_modbus_component(modbus_var))

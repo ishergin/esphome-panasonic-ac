@@ -1,0 +1,118 @@
+# Substitutions - переопределяются через командную строку:
+# esphome compile ac.yaml --substitution device_name=ac-living --substitution device_location="Living Room"
+substitutions:
+  device_name: panasonic-ac
+  device_location: "AC"
+  device_prefix: "Panasonic AC"
+  modbus_address: "1"
+
+esphome:
+  name: ${device_name}
+  name_add_mac_suffix: true
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+
+wifi:
+  ssid: "iG0R"
+  password: "${wifi_password}"
+
+logger:
+  level: DEBUG
+  logs:
+    modbus: INFO
+#  baud_rate: 0 # ESP8266 only
+
+api:
+web_server:
+  port: 80
+
+ota:
+  platform: esphome
+
+# UART для подключения к кондиционеру (CN-CNT)
+uart:
+  - id: uart_ac
+    tx_pin: GPIO20
+    rx_pin: GPIO21
+    baud_rate: 9600
+    parity: EVEN
+
+  # UART для RS485 Modbus (подключите к MAX485/MAX3485)
+  - id: uart_modbus
+    tx_pin: GPIO6
+    rx_pin: GPIO5
+    baud_rate: 115200
+    data_bits: 8
+    parity: NONE
+    stop_bits: 2
+
+# Конфигурация Modbus
+modbus:
+  - uart_id: uart_modbus
+    id: modbus_bus
+    role: server  # Обязательно для ответа на запросы от мастера (Wiren Board)
+    # flow_control_pin: GPIO7  # Пин управления направлением DE/RE (опционально)
+
+# Внешние компоненты (используем локальные файлы)
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [panasonic_ac, panasonic_ac_modbus]
+
+# Modbus шлюз для кондиционера
+panasonic_ac_modbus:
+  id: ac_modbus
+  address: 0x${modbus_address}  # Адрес Modbus устройства
+
+# Климат (основное управление кондиционером)
+climate:
+  - platform: panasonic_ac
+    type: cnt
+    name: "${device_prefix} ${device_location}"
+    uart_id: uart_ac  # Явно указываем UART для AC
+    modbus: ac_modbus  # Ссылка на Modbus компонент для синхронизации
+
+    horizontal_swing_select:
+      name: "Horizontal Swing"
+    vertical_swing_select:
+      name: "Vertical Swing"
+    outside_temperature:
+      name: "Outside Temperature"
+    eco_switch:
+      name: "Eco Mode"
+    econavi_switch:
+      name: "Econavi"
+    # nanoex_switch:
+    #   name: "NanoeX"
+    mild_dry_switch:
+      name: "Mild Dry"
+    current_power_consumption:
+      name: "Power Consumption"
+
+    # Adapt according to your measurements
+    # current_temperature_offset: 0
+    # outside_temperature_offset: 0
+
+    # # Useful when the ac does not report a current temperature (CZ-TACG1 only)
+    # current_temperature_sensor: temperature_sensor_id
+
+# Управление Modbus адресом через WebUI/API
+number:
+  - platform: template
+    name: "Modbus Address"
+    id: modbus_address_number
+    min_value: 1
+    max_value: 247
+    step: 1
+    initial_value: ${modbus_address}
+    optimistic: true
+    restore_value: false
+    entity_category: config
+    icon: mdi:numeric
+    mode: box
+    on_value:
+      then:
+        - lambda: 'id(ac_modbus).set_address((uint8_t)x);'

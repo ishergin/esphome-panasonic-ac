@@ -1,0 +1,292 @@
+{
+  "device_type": "panasonic-ac",
+  "title": "Panasonic AC",
+  "device": {
+    "name": "panasonic-ac",
+    "id": "panasonic-ac",
+    "groups": [
+      {
+        "title": "Status",
+        "id": "g_status"
+      },
+      {
+        "title": "Mode",
+        "id": "g_mode"
+      },
+      {
+        "title": "Sensors",
+        "id": "g_input"
+      },
+      {
+        "title": "Modbus",
+        "id": "g_modbus"
+      }
+    ],
+    "channels": [
+      {
+        "id": "power",
+        "name": "Power",
+        "reg_type": "holding",
+        "address": 0,
+        "group": "g_status",
+        "type": "switch",
+        "format": "u16"
+      },
+      {
+        "id": "mode",
+        "name": "Mode",
+        "reg_type": "holding",
+        "address": 1,
+        "group": "g_mode",
+        "type": "range",
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "enum_titles": [
+          "Off",
+          "Heat",
+          "Cool",
+          "Dry",
+          "Fan",
+          "Auto"
+        ],
+        "min": 0,
+        "max": 5
+      },
+      {
+        "id": "target_temp",
+        "name": "Target Temp",
+        "reg_type": "holding",
+        "address": 2,
+        "group": "g_mode",
+        "type": "range",
+        "format": "u16",
+        "units": "deg C",
+        "round_to": 0.5,
+        "min": 16,
+        "max": 30,
+        "scale": 0.1
+      },
+      {
+        "id": "fan_mode",
+        "name": "Fan Mode",
+        "reg_type": "holding",
+        "address": 3,
+        "group": "g_mode",
+        "type": "range",
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "enum_titles": [
+          "Auto",
+          "Speed 1",
+          "Speed 2",
+          "Speed 3",
+          "Speed 4",
+          "Speed 5"
+        ],
+        "min": 0,
+        "max": 5
+      },
+      {
+        "id": "swing_vertical",
+        "name": "Swing Vertical",
+        "reg_type": "holding",
+        "address": 4,
+        "group": "g_mode",
+        "type": "range",
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "enum_titles": [
+          "Off",
+          "Swing",
+          "Up",
+          "Up Center",
+          "Center",
+          "Down Center",
+          "Down"
+        ],
+        "min": 0,
+        "max": 6
+      },
+      {
+        "id": "swing_horizontal",
+        "name": "Swing Horizontal",
+        "reg_type": "holding",
+        "address": 5,
+        "group": "g_mode",
+        "type": "range",
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "enum_titles": [
+          "Off",
+          "Auto",
+          "Left",
+          "Left Center",
+          "Center",
+          "Right Center",
+          "Right"
+        ],
+        "min": 0,
+        "max": 6
+      },
+      {
+        "id": "eco",
+        "name": "Eco",
+        "reg_type": "holding",
+        "address": 6,
+        "group": "g_mode",
+        "type": "switch",
+        "format": "u16"
+      },
+      {
+        "id": "econavi",
+        "name": "Econavi",
+        "reg_type": "holding",
+        "address": 7,
+        "group": "g_mode",
+        "type": "switch",
+        "format": "u16"
+      },
+      {
+        "id": "mild_dry",
+        "name": "Mild Dry",
+        "reg_type": "holding",
+        "address": 8,
+        "group": "g_mode",
+        "type": "switch",
+        "format": "u16"
+      },
+      {
+        "id": "nanoex",
+        "name": "NanoeX",
+        "reg_type": "holding",
+        "address": 9,
+        "group": "g_mode",
+        "type": "switch",
+        "format": "u16"
+      },
+      {
+        "id": "preset",
+        "name": "Preset",
+        "reg_type": "holding",
+        "address": 10,
+        "group": "g_mode",
+        "type": "range",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "enum_titles": [
+          "Normal",
+          "Powerful",
+          "Quiet"
+        ],
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": "current_temp",
+        "name": "Current Temp",
+        "reg_type": "input",
+        "address": 16,
+        "group": "g_input",
+        "type": "temperature",
+        "readonly": true,
+        "format": "s16",
+        "units": "deg C",
+        "scale": 0.1
+      },
+      {
+        "id": "outside_temp",
+        "name": "Outside Temp",
+        "reg_type": "input",
+        "address": 17,
+        "group": "g_input",
+        "type": "temperature",
+        "readonly": true,
+        "format": "s16",
+        "units": "deg C",
+        "scale": 0.1
+      },
+      {
+        "id": "power_consumption",
+        "name": "Power Consumption",
+        "reg_type": "input",
+        "address": 18,
+        "group": "g_input",
+        "readonly": true,
+        "format": "u16"
+      },
+      {
+        "id": "status",
+        "name": "Status",
+        "reg_type": "input",
+        "address": 19,
+        "group": "g_status",
+        "readonly": true,
+        "format": "u16"
+      },
+      {
+        "id": "device_address",
+        "name": "Device Address",
+        "reg_type": "holding",
+        "address": 112,
+        "group": "g_modbus",
+        "type": "range",
+        "format": "u16",
+        "min": 1,
+        "max": 247
+      },
+      {
+        "id": "firmware_version",
+        "name": "Firmware Version",
+        "reg_type": "input",
+        "address": 113,
+        "group": "g_modbus",
+        "readonly": true,
+        "format": "u16"
+      },
+      {
+        "id": "device_id",
+        "name": "Device ID",
+        "reg_type": "input",
+        "address": 114,
+        "group": "g_modbus",
+        "readonly": true,
+        "format": "u16"
+      }
+    ],
+    "parameters": {},
+    "translations": {
+      "en": {
+        "xx_template_title": "panasonic-ac"
+      }
+    }
+  }
+}

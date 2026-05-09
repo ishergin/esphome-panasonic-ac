@@ -7,6 +7,10 @@
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
 
+#ifdef USE_PANASONIC_AC_MODBUS
+#include "../panasonic_ac_modbus/panasonic_ac_modbus.h"
+#endif
+
 namespace esphome {
 
 namespace panasonic_ac {
@@ -45,6 +49,10 @@ class PanasonicAC : public Component, public uart::UARTDevice, public climate::C
   void set_current_temperature_sensor(sensor::Sensor *current_temperature_sensor);
   void set_current_temperature_offset(int8_t current_temperature_offset);
 
+#ifdef USE_PANASONIC_AC_MODBUS
+  void set_modbus_component(panasonic_ac_modbus::PanasonicACModbus *modbus);
+#endif
+
   void setup() override;
   void loop() override;
 
@@ -70,6 +78,11 @@ class PanasonicAC : public Component, public uart::UARTDevice, public climate::C
   bool mild_dry_state_ = false;  // Stores the state of mild dry to prevent duplicate packets
 
   bool waiting_for_response_ = false;  // Set to true if we are waiting for a response
+
+#ifdef USE_PANASONIC_AC_MODBUS
+  panasonic_ac_modbus::PanasonicACModbus *modbus_component_ = nullptr;
+  void apply_modbus_change_(uint16_t address);
+#endif
 
   // uint8_t receive_buffer_index = 0;     // Current position of the receive buffer
   // uint8_t receive_buffer[BUFFER_SIZE];  // Stores the packet currently being received

@@ -6,6 +6,7 @@
 **/platformio.ini
 .vscode/
 venv/
+.venv/
 builds/
 *.py[cod]
 .DS_Store

@@ -1,0 +1,24 @@
+address,name,type,format,value_type,group,access
+0x0000,Power,coil,u8,switch,status,r/w
+0x0000,Power,holding,u16,range (0-1),status,r/w
+0x0006,Eco,coil,u8,switch,mode,r/w
+0x0006,Eco,holding,u16,range (0-1),mode,r/w
+0x0007,Econavi,coil,u8,switch,mode,r/w
+0x0007,Econavi,holding,u16,range (0-1),mode,r/w
+0x0008,Mild Dry,coil,u8,switch,mode,r/w
+0x0008,Mild Dry,holding,u16,range (0-1),mode,r/w
+0x0009,NanoeX,coil,u8,switch,mode,r/w
+0x0009,NanoeX,holding,u16,range (0-1),mode,r/w
+0x000A,Preset,holding,u16,range (0-2),mode,r/w
+0x0001,Mode,holding,u16,range (0-5),mode,r/w
+0x0002,Target Temp,holding,u16,range (160-300),mode,r/w
+0x0003,Fan Mode,holding,u16,range (0-5),mode,r/w
+0x0004,Swing Vertical,holding,u16,range (0-6),mode,r/w
+0x0005,Swing Horizontal,holding,u16,range (0-6),mode,r/w
+0x0070,Device Address,holding,u16,range (1-247),modbus,r/w
+0x0010,Current Temp,input,u16,value,input,r/o
+0x0011,Outside Temp,input,u16,value,input,r/o
+0x0012,Power Consumption,input,u16,value,input,r/o
+0x0013,Status,input,u16,value,status,r/o
+0x0071,Firmware Version,input,u16,value,modbus,r/o
+0x0072,Device ID,input,u16,value,modbus,r/o

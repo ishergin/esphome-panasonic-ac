@@ -312,6 +312,59 @@ void PanasonicACCNT::control(const climate::ClimateCall &call) {
 /*
  * Set the data array to the fields
  */
+// Helper function to convert climate mode to Modbus mode value
+static uint8_t climate_mode_to_modbus(climate::ClimateMode mode) {
+  switch (mode) {
+    case climate::CLIMATE_MODE_OFF: return 0;
+    case climate::CLIMATE_MODE_HEAT: return 1;
+    case climate::CLIMATE_MODE_COOL: return 2;
+    case climate::CLIMATE_MODE_DRY: return 3;
+    case climate::CLIMATE_MODE_FAN_ONLY: return 4;
+    case climate::CLIMATE_MODE_HEAT_COOL: return 5;
+    default: return 0;
+  }
+}
+
+// Helper function to convert fan speed to Modbus value
+static uint8_t fan_speed_to_modbus(const char *speed) {
+  if (strcmp(speed, "Automatic") == 0) return 0;
+  if (strcmp(speed, "1") == 0) return 1;
+  if (strcmp(speed, "2") == 0) return 2;
+  if (strcmp(speed, "3") == 0) return 3;
+  if (strcmp(speed, "4") == 0) return 4;
+  if (strcmp(speed, "5") == 0) return 5;
+  return 0;
+}
+
+// Helper function to convert vertical swing to Modbus value
+static uint8_t vertical_swing_to_modbus(const char *swing) {
+  if (strcmp(swing, "swing") == 0) return 1;
+  if (strcmp(swing, "auto") == 0) return 0;  // auto maps to off in modbus coils
+  if (strcmp(swing, "up") == 0) return 2;
+  if (strcmp(swing, "up_center") == 0) return 3;
+  if (strcmp(swing, "center") == 0) return 4;
+  if (strcmp(swing, "down_center") == 0) return 5;
+  if (strcmp(swing, "down") == 0) return 6;
+  return 0;
+}
+
+// Helper function to convert horizontal swing to Modbus value
+static uint8_t horizontal_swing_to_modbus(const char *swing) {
+  if (strcmp(swing, "auto") == 0) return 1;
+  if (strcmp(swing, "left") == 0) return 2;
+  if (strcmp(swing, "left_center") == 0) return 3;
+  if (strcmp(swing, "center") == 0) return 4;
+  if (strcmp(swing, "right_center") == 0) return 5;
+  if (strcmp(swing, "right") == 0) return 6;
+  return 0;
+}
+
+static uint8_t preset_to_modbus(const char *preset) {
+  if (strcmp(preset, "Powerful") == 0) return 1;
+  if (strcmp(preset, "Quiet") == 0) return 2;
+  return 0;
+}
+
 void PanasonicACCNT::set_data(bool set) {
   this->mode = determine_mode(this->data[0]);
   this->set_custom_fan_mode_(determine_fan_speed(this->data[3]));
@@ -373,6 +426,40 @@ void PanasonicACCNT::set_data(bool set) {
   this->update_eco(eco);
   this->update_econavi(econavi);
   this->update_mild_dry(mildDry);
+
+#ifdef USE_PANASONIC_AC_MODBUS
+  // Sync state to Modbus component
+  if (this->modbus_component_ != nullptr && set) {
+    this->modbus_component_->update_ac_state(
+        this->mode != climate::CLIMATE_MODE_OFF,
+        climate_mode_to_modbus(this->mode),
+        this->target_temperature,
+        fan_speed_to_modbus(this->get_custom_fan_mode().c_str()),
+        vertical_swing_to_modbus(verticalSwing.c_str()),
+        horizontal_swing_to_modbus(horizontalSwing.c_str()),
+        eco, econavi, mildDry, nanoex, preset_to_modbus(preset));
+
+    if (this->current_temperature_sensor_ == nullptr) {
+      if (this->rx_buffer_[18] != 0x80)
+        this->modbus_component_->update_current_temp((int8_t) this->rx_buffer_[18]);
+      else if (this->rx_buffer_[21] != 0x80)
+        this->modbus_component_->update_current_temp((int8_t) this->rx_buffer_[21]);
+    }
+
+    if (this->outside_temperature_sensor_ != nullptr) {
+      if (this->rx_buffer_[19] != 0x80)
+        this->modbus_component_->update_outside_temp((int8_t) this->rx_buffer_[19]);
+      else if (this->rx_buffer_[22] != 0x80)
+        this->modbus_component_->update_outside_temp((int8_t) this->rx_buffer_[22]);
+    }
+
+    if (this->current_power_consumption_sensor_ != nullptr) {
+      uint16_t power = determine_power_consumption(
+          (int8_t) this->rx_buffer_[28], (int8_t) this->rx_buffer_[29], (int8_t) this->rx_buffer_[30]);
+      this->modbus_component_->update_power_consumption(power);
+    }
+  }
+#endif
 }
 
 /*

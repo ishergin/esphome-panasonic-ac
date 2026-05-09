@@ -7,6 +7,168 @@ namespace panasonic_ac {
 
 static const char *const TAG = "panasonic_ac";
 
+#ifdef USE_PANASONIC_AC_MODBUS
+static uint8_t climate_to_modbus_mode(climate::ClimateMode mode) {
+  switch (mode) {
+    case climate::CLIMATE_MODE_OFF:
+      return 0;
+    case climate::CLIMATE_MODE_HEAT:
+      return 1;
+    case climate::CLIMATE_MODE_COOL:
+      return 2;
+    case climate::CLIMATE_MODE_DRY:
+      return 3;
+    case climate::CLIMATE_MODE_FAN_ONLY:
+      return 4;
+    case climate::CLIMATE_MODE_HEAT_COOL:
+      return 5;
+    default:
+      return 0;
+  }
+}
+
+static uint8_t custom_fan_mode_to_modbus(StringRef mode) {
+  if (mode == "1")
+    return 1;
+  if (mode == "2")
+    return 2;
+  if (mode == "3")
+    return 3;
+  if (mode == "4")
+    return 4;
+  if (mode == "5")
+    return 5;
+  return 0;
+}
+
+static uint8_t custom_preset_to_modbus(StringRef preset) {
+  if (preset == "Powerful")
+    return 1;
+  if (preset == "Quiet")
+    return 2;
+  return 0;
+}
+
+static uint8_t vertical_swing_option_to_modbus(StringRef swing) {
+  if (swing == "swing")
+    return 1;
+  if (swing == "up")
+    return 2;
+  if (swing == "up_center")
+    return 3;
+  if (swing == "center")
+    return 4;
+  if (swing == "down_center")
+    return 5;
+  if (swing == "down")
+    return 6;
+  return 0;
+}
+
+static uint8_t horizontal_swing_option_to_modbus(StringRef swing) {
+  if (swing == "auto")
+    return 1;
+  if (swing == "left")
+    return 2;
+  if (swing == "left_center")
+    return 3;
+  if (swing == "center")
+    return 4;
+  if (swing == "right_center")
+    return 5;
+  if (swing == "right")
+    return 6;
+  return 0;
+}
+
+static climate::ClimateMode modbus_to_climate_mode(uint8_t mode) {
+  switch (mode) {
+    case 0:
+      return climate::CLIMATE_MODE_OFF;
+    case 1:
+      return climate::CLIMATE_MODE_HEAT;
+    case 2:
+      return climate::CLIMATE_MODE_COOL;
+    case 3:
+      return climate::CLIMATE_MODE_DRY;
+    case 4:
+      return climate::CLIMATE_MODE_FAN_ONLY;
+    case 5:
+      return climate::CLIMATE_MODE_HEAT_COOL;
+    default:
+      return climate::CLIMATE_MODE_OFF;
+  }
+}
+
+static const char *modbus_to_fan_mode(uint8_t mode) {
+  switch (mode) {
+    case 0:
+      return "Automatic";
+    case 1:
+      return "1";
+    case 2:
+      return "2";
+    case 3:
+      return "3";
+    case 4:
+      return "4";
+    case 5:
+      return "5";
+    default:
+      return "Automatic";
+  }
+}
+
+static const char *modbus_to_preset(uint8_t preset) {
+  switch (preset) {
+    case 1:
+      return "Powerful";
+    case 2:
+      return "Quiet";
+    default:
+      return "Normal";
+  }
+}
+
+static const char *modbus_to_vertical_swing(uint8_t mode) {
+  switch (mode) {
+    case 1:
+      return "swing";
+    case 2:
+      return "up";
+    case 3:
+      return "up_center";
+    case 4:
+      return "center";
+    case 5:
+      return "down_center";
+    case 6:
+      return "down";
+    default:
+      return "auto";
+  }
+}
+
+static const char *modbus_to_horizontal_swing(uint8_t mode) {
+  switch (mode) {
+    case 1:
+      return "auto";
+    case 2:
+      return "left";
+    case 3:
+      return "left_center";
+    case 4:
+      return "center";
+    case 5:
+      return "right_center";
+    case 6:
+      return "right";
+    default:
+      return "auto";
+  }
+}
+#endif
+
 climate::ClimateTraits PanasonicAC::traits() {
   auto traits = climate::ClimateTraits();
 
@@ -220,6 +382,12 @@ void PanasonicAC::set_vertical_swing_select(select::Select *vertical_swing_selec
   this->vertical_swing_select_->add_on_state_callback([this](size_t index) {
     if (index == this->vertical_swing_state_)
       return;
+#ifdef USE_PANASONIC_AC_MODBUS
+    if (this->modbus_component_ != nullptr) {
+      this->modbus_component_->set_ac_swing_vertical(
+          vertical_swing_option_to_modbus(this->vertical_swing_select_->current_option()));
+    }
+#endif
     this->on_vertical_swing_change(this->vertical_swing_select_->current_option());
   });
 }
@@ -229,6 +397,12 @@ void PanasonicAC::set_horizontal_swing_select(select::Select *horizontal_swing_s
   this->horizontal_swing_select_->add_on_state_callback([this](size_t index) {
     if (index == this->horizontal_swing_state_)
       return;
+#ifdef USE_PANASONIC_AC_MODBUS
+    if (this->modbus_component_ != nullptr) {
+      this->modbus_component_->set_ac_swing_horizontal(
+          horizontal_swing_option_to_modbus(this->horizontal_swing_select_->current_option()));
+    }
+#endif
     this->on_horizontal_swing_change(this->horizontal_swing_select_->current_option());
   });
 }
@@ -238,6 +412,11 @@ void PanasonicAC::set_nanoex_switch(switch_::Switch *nanoex_switch) {
   this->nanoex_switch_->add_on_state_callback([this](bool state) {
     if (state == this->nanoex_state_)
       return;
+#ifdef USE_PANASONIC_AC_MODBUS
+    if (this->modbus_component_ != nullptr) {
+      this->modbus_component_->set_ac_nanoex(state);
+    }
+#endif
     this->on_nanoex_change(state);
   });
 }
@@ -247,6 +426,11 @@ void PanasonicAC::set_eco_switch(switch_::Switch *eco_switch) {
   this->eco_switch_->add_on_state_callback([this](bool state) {
     if (state == this->eco_state_)
       return;
+#ifdef USE_PANASONIC_AC_MODBUS
+    if (this->modbus_component_ != nullptr) {
+      this->modbus_component_->set_ac_eco(state);
+    }
+#endif
     this->on_eco_change(state);
   });
 }
@@ -256,6 +440,11 @@ void PanasonicAC::set_econavi_switch(switch_::Switch *econavi_switch) {
   this->econavi_switch_->add_on_state_callback([this](bool state) {
     if (state == this->econavi_state_)
       return;
+#ifdef USE_PANASONIC_AC_MODBUS
+    if (this->modbus_component_ != nullptr) {
+      this->modbus_component_->set_ac_econavi(state);
+    }
+#endif
     this->on_econavi_change(state);
   });
 }
@@ -265,6 +454,11 @@ void PanasonicAC::set_mild_dry_switch(switch_::Switch *mild_dry_switch) {
   this->mild_dry_switch_->add_on_state_callback([this](bool state) {
     if (state == this->mild_dry_state_)
       return;
+#ifdef USE_PANASONIC_AC_MODBUS
+    if (this->modbus_component_ != nullptr) {
+      this->modbus_component_->set_ac_mild_dry(state);
+    }
+#endif
     this->on_mild_dry_change(state);
   });
 }
@@ -272,6 +466,145 @@ void PanasonicAC::set_mild_dry_switch(switch_::Switch *mild_dry_switch) {
 void PanasonicAC::set_current_power_consumption_sensor(sensor::Sensor *current_power_consumption_sensor) {
   this->current_power_consumption_sensor_ = current_power_consumption_sensor;
 }
+
+#ifdef USE_PANASONIC_AC_MODBUS
+void PanasonicAC::apply_modbus_change_(uint16_t address) {
+  if (this->modbus_component_ == nullptr) {
+    return;
+  }
+
+  ESP_LOGD(TAG, "Applying Modbus change for register %u", address);
+
+  switch (address) {
+    case panasonic_ac_modbus::REG_POWER: {
+      auto call = this->make_call();
+      if (!this->modbus_component_->get_ac_power()) {
+        call.set_mode(climate::CLIMATE_MODE_OFF);
+      } else {
+        uint8_t mode = this->modbus_component_->get_ac_mode();
+        if (mode == 0) {
+          mode = 5;  // When power is toggled on without an explicit mode, default to AUTO.
+        }
+        call.set_mode(modbus_to_climate_mode(mode));
+      }
+      call.perform();
+      break;
+    }
+    case panasonic_ac_modbus::REG_MODE: {
+      auto call = this->make_call();
+      call.set_mode(modbus_to_climate_mode(this->modbus_component_->get_ac_mode()));
+      call.perform();
+      break;
+    }
+    case panasonic_ac_modbus::REG_TARGET_TEMP: {
+      auto call = this->make_call();
+      call.set_target_temperature(this->modbus_component_->get_ac_target_temp());
+      call.perform();
+      break;
+    }
+    case panasonic_ac_modbus::REG_FAN_MODE: {
+      auto call = this->make_call();
+      call.set_fan_mode(modbus_to_fan_mode(this->modbus_component_->get_ac_fan_mode()));
+      call.perform();
+      break;
+    }
+    case panasonic_ac_modbus::REG_PRESET: {
+      auto call = this->make_call();
+      call.set_preset(modbus_to_preset(this->modbus_component_->get_ac_preset()));
+      call.perform();
+      break;
+    }
+    case panasonic_ac_modbus::REG_SWING_VERTICAL:
+      this->on_vertical_swing_change(
+          StringRef(modbus_to_vertical_swing(this->modbus_component_->get_ac_swing_vertical())));
+      break;
+    case panasonic_ac_modbus::REG_SWING_HORIZONTAL:
+      this->on_horizontal_swing_change(
+          StringRef(modbus_to_horizontal_swing(this->modbus_component_->get_ac_swing_horizontal())));
+      break;
+    case panasonic_ac_modbus::REG_ECO:
+      this->on_eco_change(this->modbus_component_->get_ac_eco());
+      break;
+    case panasonic_ac_modbus::REG_ECONAVI:
+      this->on_econavi_change(this->modbus_component_->get_ac_econavi());
+      break;
+    case panasonic_ac_modbus::REG_MILD_DRY:
+      this->on_mild_dry_change(this->modbus_component_->get_ac_mild_dry());
+      break;
+    case panasonic_ac_modbus::REG_NANOEX:
+      this->on_nanoex_change(this->modbus_component_->get_ac_nanoex());
+      break;
+    default:
+      break;
+  }
+}
+
+void PanasonicAC::set_modbus_component(panasonic_ac_modbus::PanasonicACModbus *modbus) {
+  this->modbus_component_ = modbus;
+  this->modbus_component_->set_state_change_callback([this](uint16_t address) { this->apply_modbus_change_(address); });
+  this->add_on_control_callback([this](climate::ClimateCall &call) {
+    if (this->modbus_component_ == nullptr) {
+      return;
+    }
+
+    if (call.get_mode().has_value()) {
+      auto mode = *call.get_mode();
+      this->modbus_component_->set_ac_mode(climate_to_modbus_mode(mode));
+      this->modbus_component_->set_ac_power(mode != climate::CLIMATE_MODE_OFF);
+    }
+    if (call.get_target_temperature().has_value()) {
+      this->modbus_component_->set_ac_target_temp(*call.get_target_temperature());
+    }
+    if (call.has_custom_fan_mode()) {
+      this->modbus_component_->set_ac_fan_mode(custom_fan_mode_to_modbus(call.get_custom_fan_mode()));
+    }
+    if (call.has_custom_preset()) {
+      this->modbus_component_->set_ac_preset(custom_preset_to_modbus(call.get_custom_preset()));
+    }
+    if (call.get_swing_mode().has_value()) {
+      switch (*call.get_swing_mode()) {
+        case climate::CLIMATE_SWING_BOTH:
+          this->modbus_component_->set_ac_swing_vertical(0);
+          this->modbus_component_->set_ac_swing_horizontal(1);
+          break;
+        case climate::CLIMATE_SWING_VERTICAL:
+          this->modbus_component_->set_ac_swing_vertical(1);
+          this->modbus_component_->set_ac_swing_horizontal(4);
+          break;
+        case climate::CLIMATE_SWING_HORIZONTAL:
+          this->modbus_component_->set_ac_swing_vertical(4);
+          this->modbus_component_->set_ac_swing_horizontal(1);
+          break;
+        case climate::CLIMATE_SWING_OFF:
+        default:
+          this->modbus_component_->set_ac_swing_vertical(4);
+          this->modbus_component_->set_ac_swing_horizontal(4);
+          break;
+      }
+    }
+  });
+  this->add_on_state_callback([this](climate::Climate &climate_state) {
+    if (this->modbus_component_ == nullptr) {
+      return;
+    }
+
+    this->modbus_component_->set_ac_power(climate_state.mode != climate::CLIMATE_MODE_OFF);
+    this->modbus_component_->set_ac_mode(climate_to_modbus_mode(climate_state.mode));
+    if (!std::isnan(climate_state.target_temperature)) {
+      this->modbus_component_->set_ac_target_temp(climate_state.target_temperature);
+    }
+    if (climate_state.has_custom_fan_mode()) {
+      this->modbus_component_->set_ac_fan_mode(custom_fan_mode_to_modbus(climate_state.get_custom_fan_mode()));
+    }
+    if (climate_state.has_custom_preset()) {
+      this->modbus_component_->set_ac_preset(custom_preset_to_modbus(climate_state.get_custom_preset()));
+    } else {
+      this->modbus_component_->set_ac_preset(0);
+    }
+  });
+  ESP_LOGI(TAG, "Modbus component registered");
+}
+#endif
 
 /*
  * Debugging
